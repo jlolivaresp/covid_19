@@ -10,4 +10,4 @@ bokeh serve --show scr/covid_19.py
 ```
 
 # Visualization Demonstration
-![Demo](demo/demo.gif)
+![Demo](https://github.com/jlolivaresp/covid_19/blob/master/visualization_demonstration.gif)
