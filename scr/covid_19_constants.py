@@ -1,6 +1,6 @@
 # Paths
-DATA_SOURCES_PATH = '/Users/jloli/PycharmProjects/covid_19/configs/data_sources.json'
-COUNTRIES_DATA_SET_PATH = '/Users/jloli/PycharmProjects/covid_19/reference_data/countries_data/ne_110m_admin_0_countries.shp'
+DATA_SOURCES_PATH = '../configs/data_sources.json'
+COUNTRIES_DATA_SET_PATH = '../reference_data/countries_data/ne_110m_admin_0_countries.shp'
 
 # Pandas Settings
 PANDAS_MAX_DISP_COL_ARG = 'display.max_columns'
@@ -21,7 +21,7 @@ COUNTRY_NAME_FORMAT = 'name_short'
 GEO_DF_COLS_TO_KEEP = ['country', 'country_code', 'geometry']
 GEO_DF_COUNTRY_COL_NAME = 'country'
 
-DF_SUFFIXES = ('_cases', '_deaths')
+DF_SUFFIXES = ('_cases', '_deaths', '_recovered')
 
 # Visualization constants
 MAP_TITLE = 'Coronavirus confirmed cases, {}'
@@ -31,10 +31,12 @@ BAR_PLOT_XLABEL = 'Date'
 BAR_PLOT_YLABEL = 'Number of persons'
 BAR_PLOT_CASES_LABEL = 'Confirmed cases'
 BAR_PLOT_DEATHS_LABEL = 'Number of Deaths'
+BAR_PLOT_RECOVERED_LABEL = 'Number of People Recovered'
 MAP_HOVER_TOOL_COUNTRY_TITLE = 'Country'
 MAP_HOVER_TOOL_CASES_TITLE = 'Confirmed Cases'
 BAR_PLOT_HOVER_TOOL_CASES_TITLE = 'Confirmed cases'
 BAR_PLOT_HOVER_TOOL_DEATHS_TITLE = 'Number of deaths'
+BAR_PLOT_HOVER_TOOL_RECOVERED_TITLE = 'Number of people recovered'
 SLIDER_TITLE = 'Date'
 BAR_PLOT_INIT_COUNTRY = 'Germany'
 BAR_PLOT_INIT_COLS = [BAR_PLOT_INIT_COUNTRY + suffix for suffix in DF_SUFFIXES]
@@ -58,6 +60,7 @@ COLOR_MAPPER_NAN_COLOR = '#d9d9d9'
 BAR_PLOT_LINE_COLOR = 'grey'
 BAR_PLOT_CASES_COLOR = "#340585"
 BAR_PLOT_DEATHS_COLOR = "#cf502d"
+BAR_PLOT_RECOVERED_COLOR = "#568505"
 COLOR_PALETTE = 'Plasma'
 COLOR_PALETTE_NUMBER = 11
 PATCHES_LINE_COLOR = 'black'

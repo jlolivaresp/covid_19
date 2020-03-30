@@ -1,4 +1,5 @@
 import json
+import os
 
 import pandas as pd
 import geopandas as gpd
@@ -7,13 +8,13 @@ import country_converter as coco
 from bokeh.io import show
 from bokeh.plotting import figure
 from bokeh.models import GeoJSONDataSource, LinearColorMapper, ColorBar, ColumnDataSource, DateSlider, \
-    HoverTool, Select
+    HoverTool, Select, Quad
 from bokeh.palettes import mpl
 from bokeh.io import curdoc
 from bokeh.layouts import row, column
 
 import covid_19_config_utils as config_utils
-from covid_19_constants import PANDAS_MAX_DISP_COL_ARG, PANDAS_MAX_DISP_COLS, DF_COLS_TO_KEEP, \
+from covid_19_constants import DF_COLS_TO_KEEP, \
     DF_COUNTRY_REGION_COL_NAME, DATA_SOURCES_PATH, COUNTRIES_DATA_SET_PATH, GEO_DF_COLS_TO_KEEP, \
     GEO_DF_COUNTRY_COL_NAME, DF_VARIABLE_COL_NAME, DF_DATE_FORMAT, DF_VALUE_COL_NAME, MAP_TITLE, \
     DF_START_YEAR, DF_START_MONTH, DF_START_DAY, MAP_HOVER_TOOL_COUNTRY_TITLE, MAP_HOVER_TOOL_CASES_TITLE, \
@@ -24,7 +25,7 @@ from covid_19_constants import PANDAS_MAX_DISP_COL_ARG, PANDAS_MAX_DISP_COLS, DF
     BAR_PLOT_YLABEL, BAR_PLOT_XLABEL, BAR_PLOT_LINE_COLOR, BAR_PLOT_CASES_COLOR, BAR_PLOT_DEATHS_COLOR, \
     BAR_PLOT_CASES_LABEL, BAR_PLOT_DEATHS_LABEL, BAR_PLOT_LEGEND_LOCATION, BAR_PLOT_INIT_COUNTRY, BAR_PLOT_INIT_COLS, \
     DROPDOWN_SELECT_TITLE, LAYOUT_SIZING_MODE, DF_FILL_NA_WITH_STRING, COUNTRY_NAME_FORMAT, BAR_PLOT_WIDTH, \
-    BAR_PLOT_HEIGHT
+    BAR_PLOT_HEIGHT, BAR_PLOT_RECOVERED_LABEL, BAR_PLOT_RECOVERED_COLOR, BAR_PLOT_HOVER_TOOL_RECOVERED_TITLE
 
 
 # Define function that reads the config file and returns it as a dictionary.
@@ -122,15 +123,9 @@ def main():
 
     # Define function to make the bar plot.
     def make_bar_plot(src, country_df_cols):
-        # Add hover tool.
-        hover_2 = HoverTool(tooltips=[('Date', '@index{%F}'),
-                                      (BAR_PLOT_HOVER_TOOL_CASES_TITLE, '@{}'.format(country_df_cols[0])),
-                                      (BAR_PLOT_HOVER_TOOL_DEATHS_TITLE, '@{}'.format(country_df_cols[1]))],
-                            formatters={'@index': 'datetime'})
-
         # Create figure object.
         bar_plot_fig = figure(toolbar_location=BAR_PLOT_TOOL_BAR_LOCATION,
-                              tools=[hover_2, 'box_zoom', 'wheel_zoom', 'reset', 'save', 'pan'],
+                              tools=['box_zoom', 'wheel_zoom', 'reset', 'save', 'pan'],
                               x_axis_type='datetime',
                               title=BAR_PLOT_TITLE,
                               x_axis_label=BAR_PLOT_XLABEL,
@@ -139,18 +134,31 @@ def main():
                               plot_width=BAR_PLOT_WIDTH, )
 
         def make_quad_plot(col_to_plot: str, legend_label: str, color: str):
-            bar_plot_fig.quad(top=col_to_plot,
-                              bottom=0,
-                              left='left',
-                              right='right',
-                              color=color,
-                              line_color=BAR_PLOT_LINE_COLOR,
-                              source=src,
-                              legend_label=legend_label)
+            quad = bar_plot_fig.quad(top=col_to_plot,
+                                     bottom=0,
+                                     left='left',
+                                     right='right',
+                                     color=color,
+                                     line_color=BAR_PLOT_LINE_COLOR,
+                                     source=src,
+                                     legend_label=legend_label,
+                                     alpha=0.85)
+            return quad
 
         # Make the bar plots.
-        make_quad_plot(country_df_cols[0], BAR_PLOT_CASES_LABEL, BAR_PLOT_CASES_COLOR)
-        make_quad_plot(country_df_cols[1], BAR_PLOT_DEATHS_LABEL, BAR_PLOT_DEATHS_COLOR)
+        quad_1 = make_quad_plot(country_df_cols[0], BAR_PLOT_CASES_LABEL, BAR_PLOT_CASES_COLOR)
+        quad_2 = make_quad_plot(country_df_cols[2], BAR_PLOT_RECOVERED_LABEL, BAR_PLOT_RECOVERED_COLOR)
+        quad_3 = make_quad_plot(country_df_cols[1], BAR_PLOT_DEATHS_LABEL, BAR_PLOT_DEATHS_COLOR)
+
+        # Add hover tool.
+        hover_2 = HoverTool(tooltips=[('Date', '@index{%F}'),
+                                      (BAR_PLOT_HOVER_TOOL_CASES_TITLE, '@{}'.format(country_df_cols[0])),
+                                      (BAR_PLOT_HOVER_TOOL_DEATHS_TITLE, '@{}'.format(country_df_cols[1])),
+                                      (BAR_PLOT_HOVER_TOOL_RECOVERED_TITLE, '@{}'.format(country_df_cols[2]))],
+                            formatters={'@index': 'datetime'},
+                            renderers=[quad_1])
+
+        bar_plot_fig.add_tools(hover_2)
 
         # Adjust the bar plot legend location.
         bar_plot_fig.legend.location = BAR_PLOT_LEGEND_LOCATION
@@ -163,20 +171,26 @@ def main():
         country_df_cols = [dropdown.value.replace(' ', '_') + i for i in DF_SUFFIXES]
         second_column.children[0] = make_bar_plot(src, country_df_cols)
 
+    # Define the parent path
+    project_dir_path = os.path.dirname(__file__)
+
     # Load COVID-19 data sources dictionary
-    covid_19_data_sources_dict = read_config(DATA_SOURCES_PATH)
+    data_sources_full_path = os.path.join(project_dir_path, DATA_SOURCES_PATH)
+    covid_19_data_sources_dict = read_config(data_sources_full_path)
 
     # Load data frames
     cases_df = pd.read_csv(config_utils.get_covid_19_cases(covid_19_data_sources_dict))
     deaths_df = pd.read_csv(config_utils.get_covid_19_deaths(covid_19_data_sources_dict))
+    recovered_df = pd.read_csv(config_utils.get_covid_19_recovered(covid_19_data_sources_dict))
 
     # Clean data frames
     clean_cases_df, dropped_cols_cases_df = clean_data_frame(cases_df)
     clean_deaths_df, dropped_cols_deaths_df = clean_data_frame(deaths_df)
+    clean_recovered_df, dropped_cols_recovered_df = clean_data_frame(recovered_df)
 
     # Read shapefile using Geopandas
-    shapefile = COUNTRIES_DATA_SET_PATH
-    gdf = gpd.read_file(shapefile)[['ADMIN', 'ADM0_A3', 'geometry']]
+    shapefile_full_path = os.path.join(project_dir_path, COUNTRIES_DATA_SET_PATH)
+    gdf = gpd.read_file(shapefile_full_path)[['ADMIN', 'ADM0_A3', 'geometry']]
 
     # Rename columns.
     gdf.columns = GEO_DF_COLS_TO_KEEP
@@ -238,17 +252,21 @@ def main():
     slider = DateSlider(title=SLIDER_TITLE,
                         start=datetime.date(DF_START_YEAR, DF_START_MONTH, DF_START_DAY),
                         end=initialization_date,
-                        step=1*24*60*60*1000,
+                        step=1 * 24 * 60 * 60 * 1000,
                         value=initialization_date,
                         show_value=True)
     slider.on_change(DF_VALUE_COL_NAME, update_map_plot)
 
     # Make merged DF from the confirmed and deaths cases.
+    dropped_cols_recovered_df = dropped_cols_recovered_df.add_suffix('_recovered')
     all_countries_merged_df = dropped_cols_cases_df.merge(dropped_cols_deaths_df,
                                                           left_index=True,
                                                           right_index=True,
                                                           how='outer',
-                                                          suffixes=DF_SUFFIXES)
+                                                          suffixes=DF_SUFFIXES[0:2]).merge(dropped_cols_recovered_df,
+                                                                                           left_index=True,
+                                                                                           right_index=True,
+                                                                                           how='outer')
 
     all_countries_merged_df.index = pd.to_datetime(all_countries_merged_df.index)
 
@@ -281,8 +299,5 @@ def main():
     curdoc().add_root(lay_out)
     show(lay_out)
 
-    return cases_df, deaths_df
 
-
-# bokeh serve --show scr/covid_19.py
 main()
