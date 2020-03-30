@@ -33,9 +33,4 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
-/venv/
-.idea/
-*.html
-.xml
-.name
-.iml
+/venv/*
